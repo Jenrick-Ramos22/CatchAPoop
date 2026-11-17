@@ -117,13 +117,7 @@ public class GameRenderer {
 
         assets.draw(g, "Paused Panel.png", 75, 210, 300, 250, observer);
 
-        g.setColor(Color.WHITE);
-
-        g.setFont(
-            new Font("Monospaced", Font.BOLD, 22)
-        );
-
-        g.drawString("PAUSED", 175, 320);
+        // The PNG already says PAUSED; do not draw duplicate white text.
     }
 
     // Game Over screen

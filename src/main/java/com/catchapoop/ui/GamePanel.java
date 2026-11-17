@@ -8,6 +8,8 @@ import com.catchapoop.service.ScoreService;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 import java.sql.*;
 import java.util.*;
@@ -54,6 +56,8 @@ public class GamePanel extends JPanel {
 
     // Game state
     private boolean paused = false;
+    // True only while the left mouse button is held on the playfield.
+    private boolean mouseHeld = false;
     private long lastUpdate = System.nanoTime();
 
     // Database
@@ -90,6 +94,7 @@ public class GamePanel extends JPanel {
 
         loadImages();
         setupControls();
+        setupMouseControls();
         setupButtons();
         loadHighScore();
 
@@ -167,6 +172,42 @@ public class GamePanel extends JPanel {
             Math.min(W - PLAYER_SIZE, playerX + amount)
         );
 
+        repaint();
+    }
+
+    // Hold the left mouse button and drag to move the player horizontally.
+    // Listeners belong to the playfield, so clicking Swing buttons does not move the player.
+    private void setupMouseControls() {
+        MouseAdapter mouse = new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (SwingUtilities.isLeftMouseButton(e) && !paused && !session.isGameOver()) {
+                    mouseHeld = true;
+                    moveWithMouse(e.getX());
+                }
+            }
+
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                // BUTTON1_DOWN_MASK also prevents movement after release.
+                if (mouseHeld && (e.getModifiersEx() & MouseEvent.BUTTON1_DOWN_MASK) != 0) {
+                    moveWithMouse(e.getX());
+                }
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                if (e.getButton() == MouseEvent.BUTTON1) mouseHeld = false;
+            }
+        };
+        addMouseListener(mouse);
+        addMouseMotionListener(mouse);
+    }
+
+    // Keep the player inside the 450-pixel-wide playfield.
+    private void moveWithMouse(int mouseX) {
+        if (paused || session.isGameOver()) return;
+        playerX = Math.max(0, Math.min(W - PLAYER_SIZE, mouseX - PLAYER_SIZE / 2));
         repaint();
     }
 
@@ -254,6 +295,7 @@ public class GamePanel extends JPanel {
         }
 
         paused = !paused;
+        mouseHeld = false; // A held click must not carry through Pause/Resume.
 
         if (paused) {
             session.pauseGame();
@@ -279,6 +321,7 @@ public class GamePanel extends JPanel {
     }
 
     public void stopGame() {
+        mouseHeld = false;
         timer.stop();
     }
 

@@ -1,45 +1,77 @@
 
 package com.catchapoop;
 
-import com.catchapoop.model.GameSession;
+import com.catchapoop.model.CharacterType;
+import com.catchapoop.ui.GamePanel;
+import com.catchapoop.ui.HomePanel;
+import com.catchapoop.ui.PlayerManagementFrame;
+
+import javax.swing.*;
+import java.awt.*;
 
 public class CatchAPoop {
 
     public static void main(String[] args) {
 
-        GameSession game = new GameSession();
+        SwingUtilities.invokeLater(() -> {
 
-        // TEST 1: Normal scoring
-        game.addScore(1);
-        game.addScore(5);
+            JFrame frame = new JFrame("Catch a Poop");
 
-        System.out.println("Score: " + game.getScore());
-        System.out.println("Expected: 6");
+            CardLayout cardLayout = new CardLayout();
+            JPanel mainPanel = new JPanel(cardLayout);
 
-        // TEST 2: Rainbow power-up
-        for (int i = 0; i < 5; i++) {
-            game.catchRainbow();
-        }
+            HomePanel homePanel = new HomePanel();
 
-        System.out.println("Boost active: " + game.isBoostActive());
+            mainPanel.add(homePanel, "HOME");
 
-        // TEST 3: 10x multiplier
-        game.addScore(5);
+            // PLAY BUTTON
+            homePanel.getPlayButton().addActionListener(e -> {
 
-        System.out.println("Score after boost: " + game.getScore());
-        System.out.println("Expected: 56");
+                String playerName = homePanel.getPlayerName();
 
-        // TEST 4: Bomb Rush
-        System.out.println(
-            "Bomb Rush triggered: " + game.consumeBombRush()
-        );
+                if (playerName.isEmpty()) {
+                    JOptionPane.showMessageDialog(
+                        frame,
+                        "Please enter a player name!"
+                    );
+                    return;
+                }
 
-        // TEST 5: Hearts and Game Over
-        game.catchBomb();
-        game.catchBomb();
-        game.catchBomb();
+                CharacterType selectedCharacter =
+                        homePanel.getSelectedCharacter();
 
-        System.out.println("Hearts: " + game.getHearts());
-        System.out.println("Game Over: " + game.isGameOver());
+                GamePanel gamePanel =
+                        new GamePanel(selectedCharacter);
+
+                mainPanel.add(gamePanel, "GAME");
+                cardLayout.show(mainPanel, "GAME");
+
+                gamePanel.requestFocusInWindow();
+            });
+
+            // MANAGE PLAYERS BUTTON
+            homePanel.getManageButton().addActionListener(e -> {
+
+                PlayerManagementFrame managementFrame =
+                        new PlayerManagementFrame();
+
+                managementFrame.setDefaultCloseOperation(
+                    JFrame.DISPOSE_ON_CLOSE
+                );
+
+                managementFrame.setVisible(true);
+            });
+
+            frame.add(mainPanel);
+
+            frame.setDefaultCloseOperation(
+                JFrame.EXIT_ON_CLOSE
+            );
+
+            frame.pack();
+            frame.setLocationRelativeTo(null);
+            frame.setResizable(false);
+            frame.setVisible(true);
+        });
     }
 }

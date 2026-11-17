@@ -8,6 +8,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PlayerDAO {
 
@@ -43,7 +45,7 @@ public class PlayerDAO {
         }
     }
 
-    // READ
+    // READ - One player
     public Player getPlayerById(int id) throws SQLException {
 
         String sql = "SELECT id, name FROM players WHERE id = ?";
@@ -67,6 +69,31 @@ public class PlayerDAO {
         return null;
     }
 
+    // READ - All players
+    public List<Player> getAllPlayers() throws SQLException {
+
+        List<Player> players = new ArrayList<>();
+
+        String sql = "SELECT id, name FROM players ORDER BY id";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+
+                Player player = new Player(
+                    rs.getInt("id"),
+                    rs.getString("name")
+                );
+
+                players.add(player);
+            }
+        }
+
+        return players;
+    }
+
     // UPDATE
     public boolean updatePlayer(int id, String newName)
             throws SQLException {
@@ -79,9 +106,7 @@ public class PlayerDAO {
             pstmt.setString(1, newName);
             pstmt.setInt(2, id);
 
-            int rows = pstmt.executeUpdate();
-
-            return rows == 1;
+            return pstmt.executeUpdate() == 1;
         }
     }
 
@@ -95,9 +120,7 @@ public class PlayerDAO {
 
             pstmt.setInt(1, id);
 
-            int rows = pstmt.executeUpdate();
-
-            return rows == 1;
+            return pstmt.executeUpdate() == 1;
         }
     }
 }

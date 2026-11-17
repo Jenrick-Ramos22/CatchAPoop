@@ -3,7 +3,7 @@ package com.catchapoop.model;
 
 import java.awt.Rectangle;
 
-public class FallingObject {
+public class FallingObject implements GameObject {
 
     private int x;
     private int y;
@@ -35,10 +35,11 @@ public class FallingObject {
         this.type = type;
     }
 
+    @Override
     public void update() {
         y += speed;
     }
-
+    @Override
     public Rectangle getBounds() {
         return new Rectangle(x, y, width, height);
     }

@@ -19,6 +19,7 @@ public class CatchAPoop {
 
     public static void main(String[] args) {
 
+        // Initialize SQLite database
         try {
             DatabaseInitializer.initialize();
 
@@ -27,12 +28,15 @@ public class CatchAPoop {
             JOptionPane.showMessageDialog(
                 null,
                 "Database initialization failed: "
-                + e.getMessage()
+                + e.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE
             );
 
             return;
         }
 
+        // Start Java Swing application
         SwingUtilities.invokeLater(() -> {
 
             JFrame frame = new JFrame("Catch a Poop");
@@ -44,7 +48,7 @@ public class CatchAPoop {
 
             mainPanel.add(homePanel, "HOME");
 
-            // Starts a new game with selected player
+            // PLAY BUTTON
             homePanel.getPlayButton().addActionListener(e -> {
 
                 Player player = homePanel.getSelectedPlayer();
@@ -52,14 +56,17 @@ public class CatchAPoop {
                         homePanel.getSelectedCharacter();
 
                 if (player == null || character == null) {
+
                     JOptionPane.showMessageDialog(
                         frame,
                         "Please select a player and character!"
                     );
+
                     return;
                 }
 
                 startGame(
+                    frame,
                     mainPanel,
                     cardLayout,
                     homePanel,
@@ -68,7 +75,7 @@ public class CatchAPoop {
                 );
             });
 
-            // Open player management
+            // PLAYER MANAGEMENT BUTTON
             homePanel.getManageButton().addActionListener(e -> {
 
                 PlayerManagementFrame managementFrame =
@@ -87,7 +94,7 @@ public class CatchAPoop {
                 managementFrame.setVisible(true);
             });
 
-            // Open leaderboard
+            // LEADERBOARD BUTTON
             homePanel.getLeaderboardButton().addActionListener(e -> {
 
                 LeaderboardFrame leaderboardFrame =
@@ -96,21 +103,31 @@ public class CatchAPoop {
                 leaderboardFrame.setVisible(true);
             });
 
-            frame.add(mainPanel);
+            // Main window setup
+            frame.setContentPane(mainPanel);
 
             frame.setDefaultCloseOperation(
                 JFrame.EXIT_ON_CLOSE
             );
 
-            frame.pack();
-            frame.setLocationRelativeTo(null);
             frame.setResizable(false);
+
+            showScreen(
+                frame,
+                mainPanel,
+                cardLayout,
+                "HOME",
+                600,
+                450
+            );
+
             frame.setVisible(true);
         });
     }
 
-    // Create gameplay and connect navigation
+    // Start a new gameplay session
     private static void startGame(
+            JFrame frame,
             JPanel mainPanel,
             CardLayout cardLayout,
             HomePanel homePanel,
@@ -118,18 +135,20 @@ public class CatchAPoop {
             CharacterType character) {
 
         GamePanel gamePanel = new GamePanel(
-            player, character
+            player,
+            character
         );
 
         mainPanel.add(gamePanel, "GAME");
 
-        // RETRY - Start a fresh game
+        // RETRY BUTTON
         gamePanel.setOnRetry(() -> {
 
             gamePanel.stopGame();
             mainPanel.remove(gamePanel);
 
             startGame(
+                frame,
                 mainPanel,
                 cardLayout,
                 homePanel,
@@ -138,7 +157,7 @@ public class CatchAPoop {
             );
         });
 
-        // HOME - Return to homepage
+        // HOME BUTTON
         gamePanel.setOnHome(() -> {
 
             gamePanel.stopGame();
@@ -146,16 +165,52 @@ public class CatchAPoop {
 
             homePanel.loadPlayers();
 
-            cardLayout.show(mainPanel, "HOME");
-            mainPanel.revalidate();
-            mainPanel.repaint();
+            showScreen(
+                frame,
+                mainPanel,
+                cardLayout,
+                "HOME",
+                600,
+                450
+            );
         });
 
-        cardLayout.show(mainPanel, "GAME");
-
-        mainPanel.revalidate();
-        mainPanel.repaint();
+        // Resize window to portrait
+        showScreen(
+            frame,
+            mainPanel,
+            cardLayout,
+            "GAME",
+            450,
+            700
+        );
 
         gamePanel.requestFocusInWindow();
+    }
+
+    // Switch screens and resize the window
+    private static void showScreen(
+            JFrame frame,
+            JPanel mainPanel,
+            CardLayout cardLayout,
+            String screenName,
+            int width,
+            int height) {
+
+        cardLayout.show(mainPanel, screenName);
+
+        // Resize the content area, excluding title bar
+        mainPanel.setPreferredSize(
+            new Dimension(width, height)
+        );
+
+        mainPanel.revalidate();
+
+        // Pack adjusts the outer frame for title bar/borders
+        frame.pack();
+
+        frame.setLocationRelativeTo(null);
+
+        mainPanel.repaint();
     }
 }

@@ -1,24 +1,51 @@
-# Compiled class file
+
+# =====================================
+# CATCH A POOP - GITIGNORE
+# Java Swing + Maven + SQLite
+# =====================================
+
+# Compiled Java files
 *.class
 
-# Log file
+# Log files
 *.log
 
 # BlueJ files
 *.ctxt
 
-# Mobile Tools for Java (J2ME)
+# Mobile Tools for Java
 .mtj.tmp/
 
-# Package Files #
+# Maven build output
+/target/
+
+# NetBeans private settings
+/nbproject/private/
+
+# SQLite database files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Java package files
 *.jar
 *.war
 *.nar
 *.ear
+
+# Compressed files
 *.zip
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+# Windows system files
+Thumbs.db
+desktop.ini
+
+# macOS system files
+.DS_Store
+
+# Java virtual machine crash logs
 hs_err_pid*
 replay_pid*

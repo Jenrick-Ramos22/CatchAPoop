@@ -1,17 +1,37 @@
 
 package com.catchapoop;
 
+import com.catchapoop.database.DatabaseInitializer;
+import com.catchapoop.model.Player;
 import com.catchapoop.model.CharacterType;
 import com.catchapoop.ui.GamePanel;
 import com.catchapoop.ui.HomePanel;
 import com.catchapoop.ui.PlayerManagementFrame;
+import com.catchapoop.ui.LeaderboardFrame;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.sql.SQLException;
 
 public class CatchAPoop {
 
     public static void main(String[] args) {
+
+        try {
+            DatabaseInitializer.initialize();
+
+        } catch (SQLException e) {
+
+            JOptionPane.showMessageDialog(
+                null,
+                "Database initialization failed: "
+                + e.getMessage()
+            );
+
+            return;
+        }
 
         SwingUtilities.invokeLater(() -> {
 
@@ -24,42 +44,56 @@ public class CatchAPoop {
 
             mainPanel.add(homePanel, "HOME");
 
-            // PLAY BUTTON
+            // Starts a new game with selected player
             homePanel.getPlayButton().addActionListener(e -> {
 
-                String playerName = homePanel.getPlayerName();
+                Player player = homePanel.getSelectedPlayer();
+                CharacterType character =
+                        homePanel.getSelectedCharacter();
 
-                if (playerName.isEmpty()) {
+                if (player == null || character == null) {
                     JOptionPane.showMessageDialog(
                         frame,
-                        "Please enter a player name!"
+                        "Please select a player and character!"
                     );
                     return;
                 }
 
-                CharacterType selectedCharacter =
-                        homePanel.getSelectedCharacter();
-
-                GamePanel gamePanel =
-                        new GamePanel(selectedCharacter);
-
-                mainPanel.add(gamePanel, "GAME");
-                cardLayout.show(mainPanel, "GAME");
-
-                gamePanel.requestFocusInWindow();
+                startGame(
+                    mainPanel,
+                    cardLayout,
+                    homePanel,
+                    player,
+                    character
+                );
             });
 
-            // MANAGE PLAYERS BUTTON
+            // Open player management
             homePanel.getManageButton().addActionListener(e -> {
 
                 PlayerManagementFrame managementFrame =
                         new PlayerManagementFrame();
 
-                managementFrame.setDefaultCloseOperation(
-                    JFrame.DISPOSE_ON_CLOSE
+                managementFrame.addWindowListener(
+                    new WindowAdapter() {
+
+                        @Override
+                        public void windowClosed(WindowEvent event) {
+                            homePanel.loadPlayers();
+                        }
+                    }
                 );
 
                 managementFrame.setVisible(true);
+            });
+
+            // Open leaderboard
+            homePanel.getLeaderboardButton().addActionListener(e -> {
+
+                LeaderboardFrame leaderboardFrame =
+                        new LeaderboardFrame();
+
+                leaderboardFrame.setVisible(true);
             });
 
             frame.add(mainPanel);
@@ -73,5 +107,55 @@ public class CatchAPoop {
             frame.setResizable(false);
             frame.setVisible(true);
         });
+    }
+
+    // Create gameplay and connect navigation
+    private static void startGame(
+            JPanel mainPanel,
+            CardLayout cardLayout,
+            HomePanel homePanel,
+            Player player,
+            CharacterType character) {
+
+        GamePanel gamePanel = new GamePanel(
+            player, character
+        );
+
+        mainPanel.add(gamePanel, "GAME");
+
+        // RETRY - Start a fresh game
+        gamePanel.setOnRetry(() -> {
+
+            gamePanel.stopGame();
+            mainPanel.remove(gamePanel);
+
+            startGame(
+                mainPanel,
+                cardLayout,
+                homePanel,
+                player,
+                character
+            );
+        });
+
+        // HOME - Return to homepage
+        gamePanel.setOnHome(() -> {
+
+            gamePanel.stopGame();
+            mainPanel.remove(gamePanel);
+
+            homePanel.loadPlayers();
+
+            cardLayout.show(mainPanel, "HOME");
+            mainPanel.revalidate();
+            mainPanel.repaint();
+        });
+
+        cardLayout.show(mainPanel, "GAME");
+
+        mainPanel.revalidate();
+        mainPanel.repaint();
+
+        gamePanel.requestFocusInWindow();
     }
 }

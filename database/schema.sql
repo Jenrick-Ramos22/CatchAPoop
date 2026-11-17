@@ -24,3 +24,16 @@ CREATE TABLE IF NOT EXISTS scores (
     FOREIGN KEY (character_id)
         REFERENCES characters(id)
 );
+
+-- Register our four playable characters
+INSERT OR IGNORE INTO characters (name, image_path)
+VALUES ('TOILET', 'Official Toilet.png');
+
+INSERT OR IGNORE INTO characters (name, image_path)
+VALUES ('TRASHCAN', 'Official Trashcan.png');
+
+INSERT OR IGNORE INTO characters (name, image_path)
+VALUES ('BUCKET', 'Official Bucket.png');
+
+INSERT OR IGNORE INTO characters (name, image_path)
+VALUES ('PACMAN', 'Official Pacman.png');

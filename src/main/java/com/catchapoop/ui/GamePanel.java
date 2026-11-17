@@ -5,18 +5,23 @@ import com.catchapoop.model.FallingObject;
 import com.catchapoop.model.FallingObjectType;
 import com.catchapoop.model.GameSession;
 import com.catchapoop.model.CharacterType;
+import com.catchapoop.model.Player;
+import com.catchapoop.service.ScoreService;
+import com.catchapoop.database.DatabaseConnection;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.net.URL;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Random;
+import java.util.concurrent.ExecutionException;
 
 public class GamePanel extends JPanel {
 
-    // Game screen settings
+    // Game screen
     private static final int GAME_WIDTH = 600;
     private static final int GAME_HEIGHT = 450;
 
@@ -35,10 +40,8 @@ public class GamePanel extends JPanel {
     private static final int BUTT_SPEED = 7;
     private static final int BUTT_Y = 5;
 
-    // Spawn one normal object every 50 timer updates
+    // Spawn settings
     private static final int SPAWN_INTERVAL = 50;
-
-    // Number of bombs in each Bomb Rush
     private static final int BOMB_RUSH_COUNT = 6;
 
     // Game images
@@ -48,55 +51,87 @@ public class GamePanel extends JPanel {
     private final Image goldPoop;
     private final Image rainbowPoop;
     private final Image bombImage;
+    private final Image tissueImage;
     private final Image buttImage;
 
     // Game logic
     private final GameSession session = new GameSession();
     private final Random random = new Random();
+    private final ScoreService scoreService = new ScoreService();
 
-    // Multiple falling objects
+    // Selected player and character
+    private final Player selectedPlayer;
+    private final CharacterType selectedCharacter;
+
+    // Falling objects
     private final ArrayList<FallingObject> fallingObjects =
             new ArrayList<>();
 
-    // Player position
+    // Positions
     private int playerX = 250;
     private final int playerY = 350;
 
-    // Butt position and movement
     private int buttX = 250;
     private int buttDirection = 1;
-
-    // Spawn counter
     private int spawnCounter = 0;
 
-    // Game timer
+    // Pause and gameplay clock
+    private boolean paused = false;
+    private long lastUpdateNanos = System.nanoTime();
+
+    // Score saving
+    private boolean scoreSaveStarted = false;
+    private boolean scoreSaved = false;
+    private String saveStatus = "";
+
+    // Navigation
+    private Runnable onRetry;
+    private Runnable onHome;
+
+    // Buttons
+    private final JButton pauseButton = new JButton("PAUSE");
+    private final JButton retryButton = new JButton("RETRY");
+    private final JButton homeButton = new JButton("HOME");
+
     private final Timer gameTimer;
 
-    public GamePanel(CharacterType selectedCharacter) {
+    public GamePanel(Player selectedPlayer,
+                     CharacterType selectedCharacter) {
+
+        if (selectedPlayer == null || selectedCharacter == null) {
+            throw new IllegalArgumentException(
+                "Player and character are required."
+            );
+        }
+
+        this.selectedPlayer = selectedPlayer;
+        this.selectedCharacter = selectedCharacter;
 
         setPreferredSize(
             new Dimension(GAME_WIDTH, GAME_HEIGHT)
         );
 
         setFocusable(true);
+        setLayout(null);
 
-        // Load images
+        // Load sprites
         background = loadImage("Catch a Poop Background.png");
         character = loadImage(selectedCharacter.getImageFile());
         brownPoop = loadImage("Official Normal Poop.gif");
         goldPoop = loadImage("Official Gold Poop.gif");
         rainbowPoop = loadImage("Official Rainbow Poop.gif");
         bombImage = loadImage("Official Bomb.png");
+        tissueImage = loadImage("Official Tissue Roll.png");
         buttImage = loadImage("Official Butt.png");
 
         setupControls();
+        setupButtons();
 
-        // Update game approximately 60 times per second
         gameTimer = new Timer(16, e -> updateGame());
         gameTimer.start();
     }
 
-    // Load images from Maven resources
+    // Load images
     private Image loadImage(String filename) {
 
         URL url = getClass().getResource(
@@ -132,7 +167,7 @@ public class GamePanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
 
-                if (session.isGameOver()) {
+                if (paused || session.isGameOver()) {
                     return;
                 }
 
@@ -148,7 +183,7 @@ public class GamePanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
 
-                if (session.isGameOver()) {
+                if (paused || session.isGameOver()) {
                     return;
                 }
 
@@ -162,7 +197,79 @@ public class GamePanel extends JPanel {
         });
     }
 
-    // Move the butt from side to side
+    // Setup Pause, Retry, and Home
+    private void setupButtons() {
+
+        pauseButton.setBounds(470, 10, 110, 35);
+        retryButton.setBounds(150, 320, 140, 40);
+        homeButton.setBounds(310, 320, 140, 40);
+
+        retryButton.setVisible(false);
+        homeButton.setVisible(false);
+        retryButton.setEnabled(false);
+        homeButton.setEnabled(false);
+
+        pauseButton.addActionListener(e -> togglePause());
+
+        retryButton.addActionListener(e -> {
+            if (session.isGameOver()
+                    && scoreSaved
+                    && onRetry != null) {
+                stopGame();
+                onRetry.run();
+            }
+        });
+
+        homeButton.addActionListener(e -> {
+            if (session.isGameOver()
+                    && scoreSaved
+                    && onHome != null) {
+                stopGame();
+                onHome.run();
+            }
+        });
+
+        add(pauseButton);
+        add(retryButton);
+        add(homeButton);
+    }
+
+    // Pause or resume
+    private void togglePause() {
+
+        if (session.isGameOver()) {
+            return;
+        }
+
+        paused = !paused;
+
+        if (paused) {
+            session.pauseGame();
+            pauseButton.setText("RESUME");
+        } else {
+            session.resumeGame();
+            pauseButton.setText("PAUSE");
+        }
+
+        // Reset clock so paused time is never counted
+        lastUpdateNanos = System.nanoTime();
+
+        repaint();
+    }
+
+    public void setOnRetry(Runnable onRetry) {
+        this.onRetry = onRetry;
+    }
+
+    public void setOnHome(Runnable onHome) {
+        this.onHome = onHome;
+    }
+
+    public void stopGame() {
+        gameTimer.stop();
+    }
+
+    // Move butt
     private void moveButt() {
 
         buttX += BUTT_SPEED * buttDirection;
@@ -178,7 +285,7 @@ public class GamePanel extends JPanel {
         }
     }
 
-    // Spawn brown, gold, rainbow poop, or bomb
+    // Spawn objects
     private void spawnObject() {
 
         int objectX = buttX
@@ -188,34 +295,31 @@ public class GamePanel extends JPanel {
 
         FallingObjectType type;
 
-        // 25% bomb, 10% rainbow,
-        // 20% gold, 45% brown
+        // Bomb 25%, Rainbow 10%, Gold 20%
+        // Tissue 15%, Brown 30%
         if (chance < 25) {
             type = FallingObjectType.BOMB;
-
         } else if (chance < 35) {
             type = FallingObjectType.RAINBOW;
-
         } else if (chance < 55) {
             type = FallingObjectType.GOLD;
-
+        } else if (chance < 70) {
+            type = FallingObjectType.TISSUE;
         } else {
             type = FallingObjectType.BROWN;
         }
 
-        FallingObject object = new FallingObject(
+        fallingObjects.add(new FallingObject(
             objectX,
             BUTT_Y + BUTT_HEIGHT,
             POOP_SIZE,
             POOP_SIZE,
             POOP_SPEED,
             type
-        );
-
-        fallingObjects.add(object);
+        ));
     }
 
-    // Spawn six additional bombs during Bomb Rush
+    // Bomb Rush
     private void spawnBombRush() {
 
         for (int i = 0; i < BOMB_RUSH_COUNT; i++) {
@@ -224,28 +328,135 @@ public class GamePanel extends JPanel {
                 GAME_WIDTH - POOP_SIZE + 1
             );
 
-            FallingObject bomb = new FallingObject(
+            fallingObjects.add(new FallingObject(
                 bombX,
                 -POOP_SIZE - (i * 35),
                 POOP_SIZE,
                 POOP_SIZE,
                 POOP_SPEED,
                 FallingObjectType.BOMB
-            );
-
-            fallingObjects.add(bomb);
+            ));
         }
 
         System.out.println("BOMB RUSH ACTIVATED!");
     }
 
-    // Main game update
+    // Find character ID
+    private int findCharacterId(String name)
+            throws SQLException {
+
+        String sql =
+            "SELECT id FROM characters WHERE name = ?";
+
+        try (Connection conn =
+                DatabaseConnection.getConnection();
+             PreparedStatement pstmt =
+                conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, name);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+
+                if (rs.next()) {
+                    return rs.getInt("id");
+                }
+            }
+        }
+
+        throw new SQLException(
+            "Character not found: " + name
+        );
+    }
+
+    // Save score once
+    private void saveFinalScore() {
+
+        if (scoreSaveStarted) {
+            return;
+        }
+
+        scoreSaveStarted = true;
+        saveStatus = "Saving score...";
+
+        pauseButton.setVisible(false);
+        retryButton.setVisible(true);
+        homeButton.setVisible(true);
+        retryButton.setEnabled(false);
+        homeButton.setEnabled(false);
+
+        final int playerId = selectedPlayer.getId();
+        final int finalScore = session.getScore();
+
+        SwingWorker<Void, Void> worker = new SwingWorker<>() {
+
+            @Override
+            protected Void doInBackground()
+                    throws SQLException {
+
+                int characterId = findCharacterId(
+                    selectedCharacter.name()
+                );
+
+                scoreService.saveScore(
+                    playerId,
+                    characterId,
+                    finalScore
+                );
+
+                return null;
+            }
+
+            @Override
+            protected void done() {
+
+                try {
+                    get();
+                    scoreSaved = true;
+                    saveStatus = "Score saved successfully!";
+                    retryButton.setEnabled(true);
+                    homeButton.setEnabled(true);
+
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    saveStatus = "Save interrupted.";
+
+                } catch (ExecutionException ex) {
+                    saveStatus = "Score save failed!";
+                    System.err.println(
+                        "Score save error: " + ex.getCause()
+                    );
+                }
+
+                repaint();
+            }
+        };
+
+        worker.execute();
+    }
+
+    // Main game loop
     private void updateGame() {
+
+        long now = System.nanoTime();
+        long elapsedMillis =
+                Math.max(0, (now - lastUpdateNanos) / 1_000_000L);
+
+        lastUpdateNanos = now;
 
         if (session.isGameOver()) {
             gameTimer.stop();
+            saveFinalScore();
             return;
         }
+
+        // Freeze everything while paused
+        if (paused) {
+            repaint();
+            return;
+        }
+
+        // Advance only active gameplay time
+        session.updateTime(elapsedMillis);
 
         moveButt();
 
@@ -269,7 +480,6 @@ public class GamePanel extends JPanel {
         while (iterator.hasNext()) {
 
             FallingObject object = iterator.next();
-
             object.update();
 
             if (object.getBounds().intersects(playerBounds)) {
@@ -291,22 +501,25 @@ public class GamePanel extends JPanel {
                     case BOMB:
                         session.catchBomb();
                         break;
+
+                    case TISSUE:
+                        session.catchTissue();
+                        break;
                 }
 
                 iterator.remove();
 
                 if (session.isGameOver()) {
                     gameTimer.stop();
+                    saveFinalScore();
                     break;
                 }
 
             } else if (object.getY() > GAME_HEIGHT) {
-
                 iterator.remove();
             }
         }
 
-        // Trigger Bomb Rush for every crossed milestone
         if (!session.isGameOver()) {
             while (session.consumeBombRush()) {
                 spawnBombRush();
@@ -316,7 +529,7 @@ public class GamePanel extends JPanel {
         repaint();
     }
 
-    // Draw game graphics
+    // Draw game
     @Override
     protected void paintComponent(Graphics g) {
 
@@ -324,24 +537,19 @@ public class GamePanel extends JPanel {
 
         if (background != null) {
             g.drawImage(
-                background,
-                0, 0,
-                GAME_WIDTH, GAME_HEIGHT,
-                this
+                background, 0, 0,
+                GAME_WIDTH, GAME_HEIGHT, this
             );
         }
 
-        // Draw moving butt
         if (buttImage != null) {
             g.drawImage(
                 buttImage,
                 buttX, BUTT_Y,
-                BUTT_WIDTH, BUTT_HEIGHT,
-                this
+                BUTT_WIDTH, BUTT_HEIGHT, this
             );
         }
 
-        // Draw falling objects
         for (FallingObject object : fallingObjects) {
 
             Image image = null;
@@ -363,6 +571,10 @@ public class GamePanel extends JPanel {
                 case BOMB:
                     image = bombImage;
                     break;
+
+                case TISSUE:
+                    image = tissueImage;
+                    break;
             }
 
             if (image != null) {
@@ -377,29 +589,24 @@ public class GamePanel extends JPanel {
             }
         }
 
-        // Draw player
         if (character != null) {
             g.drawImage(
                 character,
                 playerX, playerY,
-                PLAYER_WIDTH, PLAYER_HEIGHT,
-                this
+                PLAYER_WIDTH, PLAYER_HEIGHT, this
             );
         }
 
-        // Display game information
         g.setFont(new Font("Arial", Font.BOLD, 22));
 
         g.setColor(Color.WHITE);
         g.drawString(
-            "Score: " + session.getScore(),
-            20, 35
+            "Score: " + session.getScore(), 20, 35
         );
 
         g.setColor(Color.RED);
         g.drawString(
-            "Hearts: " + session.getHearts(),
-            20, 65
+            "Hearts: " + session.getHearts(), 20, 65
         );
 
         g.setColor(Color.MAGENTA);
@@ -408,45 +615,41 @@ public class GamePanel extends JPanel {
             20, 95
         );
 
-        // Display rainbow boost timer
         if (session.isBoostActive()) {
             g.setColor(Color.YELLOW);
-
             g.drawString(
                 "10X BOOST: "
-                + session.getBoostSecondsRemaining()
-                + "s",
+                + session.getBoostSecondsRemaining() + "s",
                 20, 125
             );
         }
 
-        // Display Game Over
-        if (session.isGameOver()) {
-
-            g.setColor(new Color(0, 0, 0, 180));
-            g.fillRect(
-                0, 0,
-                GAME_WIDTH, GAME_HEIGHT
-            );
+        if (paused && !session.isGameOver()) {
+            g.setColor(new Color(0, 0, 0, 160));
+            g.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
             g.setColor(Color.WHITE);
-            g.setFont(
-                new Font("Arial", Font.BOLD, 42)
-            );
+            g.setFont(new Font("Arial", Font.BOLD, 42));
+            g.drawString("PAUSED", 210, 220);
+        }
 
-            g.drawString(
-                "GAME OVER",
-                160, 210
-            );
+        if (session.isGameOver()) {
+            g.setColor(new Color(0, 0, 0, 180));
+            g.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-            g.setFont(
-                new Font("Arial", Font.BOLD, 24)
-            );
+            g.setColor(Color.WHITE);
+            g.setFont(new Font("Arial", Font.BOLD, 42));
+            g.drawString("GAME OVER", 160, 210);
 
+            g.setFont(new Font("Arial", Font.BOLD, 24));
             g.drawString(
                 "Final Score: " + session.getScore(),
                 190, 255
             );
+
+            g.setFont(new Font("Arial", Font.BOLD, 16));
+            g.setColor(Color.YELLOW);
+            g.drawString(saveStatus, 160, 290);
         }
     }
 }

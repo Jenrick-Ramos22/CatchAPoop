@@ -6,6 +6,7 @@ public enum FallingObjectType {
     BROWN,
     GOLD,
     RAINBOW,
-    BOMB
+    BOMB,
+    TISSUE
 
 }

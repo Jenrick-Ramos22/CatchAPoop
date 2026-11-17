@@ -1,37 +1,63 @@
 
 package com.catchapoop.database;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
-import java.sql.Statement;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 public class DatabaseInitializer {
 
     public static void initialize() throws SQLException {
 
-        Path schemaPath = Path.of("database", "schema.sql");
+        // Read schema.sql from Maven resources
+        try (InputStream input =
+                DatabaseInitializer.class.getResourceAsStream(
+                    "/schema.sql"
+                )) {
 
-        try {
-            String sql = Files.readString(schemaPath);
-
-            try (Connection conn = DatabaseConnection.getConnection();
-                 Statement stmt = conn.createStatement()) {
-
-                for (String command : sql.split(";")) {
-                    if (!command.isBlank()) {
-                        stmt.execute(command);
-                    }
-                }
-
-                System.out.println("Database tables created!");
+            if (input == null) {
+                throw new SQLException("schema.sql not found!");
             }
 
-        } catch (IOException e) {
+            String sql = new String(
+                input.readAllBytes(),
+                StandardCharsets.UTF_8
+            );
+
+            try (Connection conn =
+                    DatabaseConnection.getConnection()) {
+
+                conn.setAutoCommit(false);
+
+                try (Statement stmt = conn.createStatement()) {
+
+                    // Execute each SQL statement
+                    for (String command : sql.split(";")) {
+
+                        if (!command.isBlank()) {
+                            stmt.execute(command);
+                        }
+                    }
+
+                    conn.commit();
+
+                    System.out.println(
+                        "Database initialized successfully!"
+                    );
+
+                } catch (SQLException e) {
+
+                    conn.rollback();
+                    throw e;
+                }
+            }
+
+        } catch (java.io.IOException e) {
+
             throw new SQLException(
-                "Cannot read schema.sql: " + e.getMessage(), e
+                "Cannot read schema.sql", e
             );
         }
     }

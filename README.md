@@ -1,4 +1,5 @@
 Setup Guide (READ ME)
+
 3.1 Prerequisites
 Before installing and running Catch a Poop, make sure that the computer meets the following requirements:
 - Operating System: Windows

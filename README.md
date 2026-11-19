@@ -1,6 +1,7 @@
 Setup Guide (READ ME)
 
 3.1 Prerequisites
+
 Before installing and running Catch a Poop, make sure that the computer meets the following requirements:
 - Operating System: Windows
 - Java Version: Java Development Kit (JDK) 21
@@ -9,7 +10,9 @@ Before installing and running Catch a Poop, make sure that the computer meets th
 
   
 3.2 Installation Instructions
+
 To install and launch Catch a Poop, follow these steps:
+
 1. Download and install Java 21 on your computer using the Eclipse Temurin Java download website.
    Suggestion Link: https://adoptium.net/temurin/releases/?version=21
 2. Download the Catch A Poop v1.0.1 ZIP file in the github’s releases section on the right or through the link below.
@@ -28,6 +31,7 @@ Catch a Poop uses SQLite to store player information, characters, and game score
 
 
 The database uses the following Java files:
+
 - DatabaseConnection.java — Connects the game to the SQLite database.
 - DatabaseInitializer.java — Creates the database tables using schema.sql.
 - PlayerDAO.java — Manages player information.
@@ -42,6 +46,7 @@ C:\Users\<WindowsUsername>.catchapoop\catchapoop.db
 
 
 Database Setup Steps:
+
 1. Open Catch a Poop.
 2. The game automatically connects to SQLite.
 3. Missing database tables are created using schema.sql.
@@ -56,12 +61,15 @@ Installing Java 21:
 4. Open Command Prompt and type: java -version
 The result should show Java 21.
 
+
 3.5 Building and Running the Project
+
 Developers and instructors can build Catch a Poop using its Java source code.
 Prerequisites:
 - Java Development Kit (JDK) 21
 - Apache NetBeans with Maven support
 - Internet connection for downloading Maven dependencies
+
   
 Build Procedure Using Apache NetBeans:
 1. Visit the Catch a Poop GitHub Repository.
@@ -79,7 +87,9 @@ A successful build displays: BUILD SUCCESS
 Running the Project:
 After building, right-click the project in Apache NetBeans and select Run. The game should launch using Java 21.
 
+
 3.6 Troubleshooting
+
 Problem 1: Java Is Not Recognized
 Error:
 'java' is not recognized as an internal or external command

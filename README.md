@@ -8,6 +8,7 @@ Game Files: Complete Catch a Poop ZIP file
 
 
 3.2 Installation Instructions
+
 To install and launch Catch a Poop, follow these steps:
 Download and install Java 21 on your computer using the Eclipse Temurin Java download website. 
 [Suggestion Link: https://adoptium.net/temurin/releases/?version=21]
@@ -21,6 +22,7 @@ Wait for the game window to appear before starting.
 
 
 3.3 Database Setup
+
 Catch a Poop uses SQLite to store player information, characters, and game scores. The database is automatically created when the game starts, so users do not need to install or set up a separate database.
 The database uses the following Java files:
 DatabaseConnection.java — Connects the game to the SQLite database.
@@ -41,6 +43,7 @@ Player information and scores remain saved even after closing the game.
 
 
 3.4 Configuration
+
 Catch a Poop requires Java 21 to run.
 Installing Java 21:
 Download Java 21 from https://adoptium.net/temurin/releases/?version=21
@@ -51,6 +54,7 @@ The result should show Java 21.
 
 
 3.5 Building and Running the Project
+
 Developers and instructors can build Catch a Poop using its Java source code.
 Prerequisites:
 Java Development Kit (JDK) 21

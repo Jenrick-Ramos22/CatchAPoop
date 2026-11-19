@@ -8,8 +8,12 @@ Before installing and running Catch a Poop, make sure that the computer meets th
 - Development Environment: Apache NetBeans
 - Game Files: Complete Catch a Poop ZIP file
 
+
+
+
   
 3.2 Installation Instructions
+
 
 To install and launch Catch a Poop, follow these steps:
 
@@ -24,8 +28,10 @@ To install and launch Catch a Poop, follow these steps:
 7. Wait for the game window to appear before starting.
 
 
+
    
 3.3 Database Setup
+
 Catch a Poop uses SQLite to store player information, characters, and game scores. The database is automatically created when the game starts, so users do not need to install or set up a separate database.
 
 
@@ -62,6 +68,9 @@ Installing Java 21:
 The result should show Java 21.
 
 
+
+
+
 3.5 Building and Running the Project
 
 Developers and instructors can build Catch a Poop using its Java source code.
@@ -69,6 +78,7 @@ Prerequisites:
 - Java Development Kit (JDK) 21
 - Apache NetBeans with Maven support
 - Internet connection for downloading Maven dependencies
+
 
   
 Build Procedure Using Apache NetBeans:
@@ -86,6 +96,10 @@ A successful build displays: BUILD SUCCESS
 
 Running the Project:
 After building, right-click the project in Apache NetBeans and select Run. The game should launch using Java 21.
+
+
+
+
 
 
 3.6 Troubleshooting

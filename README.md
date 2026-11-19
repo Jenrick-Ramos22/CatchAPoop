@@ -135,6 +135,8 @@ Solution:
 2. Open Command Prompt and enter java -version.
 3. If an older version appears, configure the system PATH to use Java 21 or update the game launcher to use the installed Java 21 executable.
 4. Relaunch Catch a Poop.
+
+   
 Problem 3: JAR File Cannot Be Found
 Error:
 Unable to access jarfile CatchAPoop.jar
@@ -147,6 +149,10 @@ The JAR file is missing or Command Prompt is opened in the wrong folder.
 Solution:
 
 Ensure that CatchAPoop.jar and Play-CatchAPoop.bat are in the same extracted folder. When using Command Prompt, run the command from the folder containing the JAR file.
+
+
+
+
 Problem 4: Smart App Control Blocks the Launcher
 Windows Smart App Control may block the downloaded launcher because it cannot verify the application's trustworthiness.
 

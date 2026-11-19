@@ -48,16 +48,16 @@ Installing Java 21:
 2. Run the installer and enable Add to PATH, if available.
 3. Finish the installation.
 4. Open Command Prompt and type: java -version
-
-
 The result should show Java 21.
 
-3.5 Building and Running the Project
+3.5 
+Building and Running the Project
 Developers and instructors can build Catch a Poop using its Java source code.
 Prerequisites:
 - Java Development Kit (JDK) 21
 - Apache NetBeans with Maven support
 - Internet connection for downloading Maven dependencies
+  
 Build Procedure Using Apache NetBeans:
 1. Visit the Catch a Poop GitHub Repository.
 2. Download the ZIP file named “Catch A Poop (5)”, or clone the repository.
